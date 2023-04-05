@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://kit.fontawesome.com/e047873533.js" crossorigin="anonymous"></script>
+    <title>To do list</title>
+    <styile>
+    .container {
+  width: 35%;
+  margin: 10% auto;
+  font-size: 4vh;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.titile {
+  padding: 3px 15px;
+}
+
+.add {
+  background-color: white;
+}
+
+.additem {
+  width: 95%;
+  font-size: 2vh;
+  padding: 10px;
+  border: none;
+}
+
+.item {
+  display: flex;
+  padding: 20px;
+  font-size: 2vh;
+  border-top: 1px solid rgb(197, 195, 195);
+}
+
+.delete-btn {
+  float: right;
+}
+
+.savedItem {
+  width: 100%;
+  margin-right: 2vh;
+  border: none;
+  background: transparent;
+  padding: 8px 2px;
+}
+
+.savedItem:focus {
+  text-decoration: none;
+}
+
+.clear {
+  text-align: center;
+  color: grey;
+  padding: 10px;
+  border-top: 1px solid rgb(252, 245, 245);
+  font-size: 2vh;
+}
+
+.clear button {
+  padding: 20px 25px;
+  border: none;
+  width: 100%;
+}
+
+.clear button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: rgb(236, 32, 5);
+}
+
+.underline {
+  text-decoration: line-through;
+}
+
+    
+    
+    </styile>
+</head>
+
+<body>
+    <main>
+        <div class="container">
+            <div class="titile">
+                <p> Today's To Do</p>
+            </div>
+            <div class="add">
+                <input type="text" name="additem" class="additem" placeholder="Add your list ...">
+            </div>
+            <div class="items">
+                <div class="item">
+                    <input type="checkbox" name="checkTask" class="checktask">
+                   <input type="text" value="abebe" class="savedItem"  >
+                    <i class="fa fa-trash move-btn" aria-hidden="true"></i>
+                </div>
+
+            </div>
+            <div class="clear">
+                <button> Clear all completed</button>
+            </div>
+
+        </div>
+    </main>
+</body>
+
+script>
+
+class task {
+import './style.css';
+import Task from './task.js';
+import storeTask from './taskService.js';
+import manipulateInterface from './updateInterface.js';
+
+const addtaskInput = document.querySelector('.additem');
+
+manipulateInterface.displayTasks();
+
+addtaskInput.addEventListener('keypress', (event) => {
+  if (event.key === 'Enter') {
+    const taskItem = new Task(0, addtaskInput.value, false);
+    const tasks = storeTask.saveTask(taskItem, storeTask.getTasks());
+    localStorage.setItem('task', JSON.stringify(tasks));
+    manipulateInterface.displayTasks();
+  }
+});
+
+  constructor(index = 0, description, isCompeleted = false) {
+    this.index = index;
+    this.description = description;
+    this.isCompeleted = isCompeleted;
+  }
+}
+export default task;
+
+
+
+
+class storeTask {
+  static getTasks() {
+    return JSON.parse(localStorage.getItem('task')) || [];
+  }
+
+  static reArrange(tasks) {
+    tasks.forEach((task, i) => {
+      task.index = i + 1;
+    });
+    return tasks;
+  }
+
+  static saveTask(task, tasks) {
+    if (tasks.length === 0) {
+      task.index = 1;
+    } else {
+      const lastTask = tasks[tasks.length - 1];
+      task.index = lastTask.index + 1;
+    }
+    tasks.push(task);
+    return tasks;
+  }
+
+  static removeTask(index, tasks) {
+    tasks.forEach((task, i) => {
+      if (task.index === parseInt(index, 10)) {
+        tasks.splice(i, 1);
+      }
+    });
+    tasks = storeTask.reArrange(tasks);
+    return tasks;
+  }
+
+  static removeCompeletedTask(tasks) {
+    tasks = tasks.filter((x) => x.isCompeleted === false);
+    tasks = storeTask.reArrange(tasks);
+    return tasks;
+  }
+
+  static updateStatus(index, status, tasks) {
+    tasks[index - 1].isCompeleted = status;
+    return tasks;
+  }
+
+  static updateDescription(index, desc, tasks) {
+    tasks[index - 1].description = desc;
+    return tasks;
+  }
+}
+
+
+const storeTask = require('./taskService.js');
+// Unit-Test for SaveTask
+describe('saveTask()', () => {
+  it('saveTask must add task on existing list', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+    ];
+    const newTask = {
+      index: 2,
+      description: 'two',
+      isCompeleted: true,
+    };
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    // Act
+    const output = storeTask.saveTask(newTask, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+  it('saveTask must start from inde one', () => {
+    // Arrange
+    const tasks = [];
+    const newTask = {
+      index: 2,
+      description: 'two',
+      isCompeleted: true,
+    };
+    const expected = [
+      {
+        index: 1,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    // Act
+    const output = storeTask.saveTask(newTask, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+// Unit-Test for removeTask
+describe('removeTask()', () => {
+  it('removeTask must remove task on existing list', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    const tobeRemoved = {
+      index: 2,
+      description: 'two',
+      isCompeleted: true,
+    };
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.removeTask(tobeRemoved.index, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+  it('removeTask must remove task on existing list and fix index number', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    const tobeRemoved = {
+      index: 1,
+      description: 'one',
+      isCompeleted: false,
+    };
+    const expected = [
+      {
+        index: 1,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    // Act
+    const output = storeTask.removeTask(tobeRemoved.index, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+
+// Unit-Test for compeletedTask
+describe('removeCompeletedTask()', () => {
+  it('removeCompeletedTask must remove tasks that are compeleted', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: true,
+      },
+      {
+        index: 3,
+        description: 'three',
+        isCompeleted: true,
+      },
+    ];
+
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.removeCompeletedTask(tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+  it('removeCompeletedTask must remove tasks that are compeleted and rearrange index number', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+      {
+        index: 3,
+        description: 'three',
+        isCompeleted: true,
+      },
+    ];
+    const expected = [
+      {
+        index: 1,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.removeCompeletedTask(tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+
+// Unit-Test for update Compeleted Status
+describe('updateStatus()', () => {
+  it('updateStatus must update status to true', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.updateStatus(1, true, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+  it('updateStatus must update status to false', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.updateStatus(1, false, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+
+// Unit-Test for update Description
+describe('updateDescription()', () => {
+  it('updateDescription must update description', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'descriptions should not be updated',
+        isCompeleted: false,
+      },
+    ];
+
+    const expected = [
+      {
+        index: 1,
+        description: 'description updated',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'descriptions should not be updated',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.updateDescription(1, 'description updated', tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+
+import storeTask from './taskService.js';
+
+const itemsContainer = document.querySelector('.items');
+const generateItems = (taskitem) => {
+  let result = '';
+  if (taskitem.isCompeleted) {
+    result = `
+                <div class="item" draggable="true">
+                <input type="checkbox" name="checkbox" data-id ="${taskitem.index}" class="checktask" checked>
+                <input type="text" value="${taskitem.description}"data-id ="${taskitem.index}" class="savedItem underline"  >
+                <i class="fa fa-trash delete-btn" data-id ="${taskitem.index}"  aria-hidden="true"></i>
+            </div> 
+                `;
+  } else {
+    result = `
+                <div class="item" draggable="true">
+                <input type="checkbox" name="checkbox"  data-id ="${taskitem.index}" class="checktask" >
+               <input type="text" value="${taskitem.description}" data-id ="${taskitem.index}" class="savedItem"  >
+               <i class="fa fa-trash delete-btn" data-id ="${taskitem.index}" aria-hidden="true"></i>
+            </div> 
+                `;
+  }
+  return result;
+};
+class manipulateInterface {
+  static displayTasks() {
+    const taskList = storeTask.getTasks();
+
+    let htmlContent = '';
+    taskList.forEach((taksitem) => {
+      htmlContent += generateItems(taksitem);
+    });
+    itemsContainer.innerHTML = htmlContent;
+    document.querySelector('.additem').value = '';
+    document.querySelectorAll('.checktask').forEach((item) => {
+      item.addEventListener('change', function addCheckListner() {
+        const index = this.getAttribute('data-id');
+        const status = this.checked;
+        const tasks = storeTask.updateStatus(index, status, storeTask.getTasks());
+        localStorage.setItem('task', JSON.stringify(tasks));
+        manipulateInterface.displayTasks();
+      });
+    });
+    document.querySelectorAll('.delete-btn').forEach((item) => {
+      item.addEventListener('click', function addCheckListner() {
+        const index = this.getAttribute('data-id');
+        const tasks = storeTask.removeTask(index, storeTask.getTasks());
+        localStorage.setItem('task', JSON.stringify(tasks));
+        manipulateInterface.displayTasks();
+      });
+    });
+    document.querySelectorAll('.clear').forEach((item) => {
+      item.addEventListener('click', () => {
+        const tasks = storeTask.removeCompeletedTask(storeTask.getTasks());
+        localStorage.setItem('task', JSON.stringify(tasks));
+        manipulateInterface.displayTasks();
+      });
+    });
+
+    document.querySelectorAll('.savedItem').forEach((item) => {
+      item.addEventListener('keypress', function updateDescriptionEvent(event) {
+        if (event.key === 'Enter') {
+          const index = this.getAttribute('data-id');
+          const description = this.value;
+          const tasks = storeTask.updateDescription(index, description, storeTask.getTasks());
+          localStorage.setItem('task', JSON.stringify(tasks));
+          manipulateInterface.displayTasks();
+        }
+      });
+    });
+  }
+}
+export default manipulateInterface;
+module.exports = storeTask;
+
+const storeTask = require('./taskService.js');
+// Unit-Test for SaveTask
+describe('saveTask()', () => {
+  it('saveTask must add task on existing list', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+    ];
+    const newTask = {
+      index: 2,
+      description: 'two',
+      isCompeleted: true,
+    };
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    // Act
+    const output = storeTask.saveTask(newTask, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+  it('saveTask must start from inde one', () => {
+    // Arrange
+    const tasks = [];
+    const newTask = {
+      index: 2,
+      description: 'two',
+      isCompeleted: true,
+    };
+    const expected = [
+      {
+        index: 1,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    // Act
+    const output = storeTask.saveTask(newTask, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+// Unit-Test for removeTask
+describe('removeTask()', () => {
+  it('removeTask must remove task on existing list', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    const tobeRemoved = {
+      index: 2,
+      description: 'two',
+      isCompeleted: true,
+    };
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.removeTask(tobeRemoved.index, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+  it('removeTask must remove task on existing list and fix index number', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    const tobeRemoved = {
+      index: 1,
+      description: 'one',
+      isCompeleted: false,
+    };
+    const expected = [
+      {
+        index: 1,
+        description: 'two',
+        isCompeleted: true,
+      },
+    ];
+    // Act
+    const output = storeTask.removeTask(tobeRemoved.index, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+
+// Unit-Test for compeletedTask
+describe('removeCompeletedTask()', () => {
+  it('removeCompeletedTask must remove tasks that are compeleted', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: true,
+      },
+      {
+        index: 3,
+        description: 'three',
+        isCompeleted: true,
+      },
+    ];
+
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.removeCompeletedTask(tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+  it('removeCompeletedTask must remove tasks that are compeleted and rearrange index number', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+      {
+        index: 3,
+        description: 'three',
+        isCompeleted: true,
+      },
+    ];
+    const expected = [
+      {
+        index: 1,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.removeCompeletedTask(tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+
+// Unit-Test for update Compeleted Status
+describe('updateStatus()', () => {
+  it('updateStatus must update status to true', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.updateStatus(1, true, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+  it('updateStatus must update status to false', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+
+    const expected = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: false,
+      },
+      {
+        index: 2,
+        description: 'two',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.updateStatus(1, false, tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+
+// Unit-Test for update Description
+describe('updateDescription()', () => {
+  it('updateDescription must update description', () => {
+    // Arrange
+    const tasks = [
+      {
+        index: 1,
+        description: 'one',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'descriptions should not be updated',
+        isCompeleted: false,
+      },
+    ];
+
+    const expected = [
+      {
+        index: 1,
+        description: 'description updated',
+        isCompeleted: true,
+      },
+      {
+        index: 2,
+        description: 'descriptions should not be updated',
+        isCompeleted: false,
+      },
+    ];
+    // Act
+    const output = storeTask.updateDescription(1, 'description updated', tasks);
+    // Assert
+    expect(output).toStrictEqual(expected);
+  });
+});
+
+import storeTask from './taskService.js';
+
+const itemsContainer = document.querySelector('.items');
+const generateItems = (taskitem) => {
+  let result = '';
+  if (taskitem.isCompeleted) {
+    result = `
+                <div class="item" draggable="true">
+                <input type="checkbox" name="checkbox" data-id ="${taskitem.index}" class="checktask" checked>
+                <input type="text" value="${taskitem.description}"data-id ="${taskitem.index}" class="savedItem underline"  >
+                <i class="fa fa-trash delete-btn" data-id ="${taskitem.index}"  aria-hidden="true"></i>
+            </div> 
+                `;
+  } else {
+    result = `
+                <div class="item" draggable="true">
+                <input type="checkbox" name="checkbox"  data-id ="${taskitem.index}" class="checktask" >
+               <input type="text" value="${taskitem.description}" data-id ="${taskitem.index}" class="savedItem"  >
+               <i class="fa fa-trash delete-btn" data-id ="${taskitem.index}" aria-hidden="true"></i>
+            </div> 
+                `;
+  }
+  return result;
+};
+class manipulateInterface {
+  static displayTasks() {
+    const taskList = storeTask.getTasks();
+
+    let htmlContent = '';
+    taskList.forEach((taksitem) => {
+      htmlContent += generateItems(taksitem);
+    });
+    itemsContainer.innerHTML = htmlContent;
+    document.querySelector('.additem').value = '';
+    document.querySelectorAll('.checktask').forEach((item) => {
+      item.addEventListener('change', function addCheckListner() {
+        const index = this.getAttribute('data-id');
+        const status = this.checked;
+        const tasks = storeTask.updateStatus(index, status, storeTask.getTasks());
+        localStorage.setItem('task', JSON.stringify(tasks));
+        manipulateInterface.displayTasks();
+      });
+    });
+    document.querySelectorAll('.delete-btn').forEach((item) => {
+      item.addEventListener('click', function addCheckListner() {
+        const index = this.getAttribute('data-id');
+        const tasks = storeTask.removeTask(index, storeTask.getTasks());
+        localStorage.setItem('task', JSON.stringify(tasks));
+        manipulateInterface.displayTasks();
+      });
+    });
+    document.querySelectorAll('.clear').forEach((item) => {
+      item.addEventListener('click', () => {
+        const tasks = storeTask.removeCompeletedTask(storeTask.getTasks());
+        localStorage.setItem('task', JSON.stringify(tasks));
+        manipulateInterface.displayTasks();
+      });
+    });
+
+    document.querySelectorAll('.savedItem').forEach((item) => {
+      item.addEventListener('keypress', function updateDescriptionEvent(event) {
+        if (event.key === 'Enter') {
+          const index = this.getAttribute('data-id');
+          const description = this.value;
+          const tasks = storeTask.updateDescription(index, description, storeTask.getTasks());
+          localStorage.setItem('task', JSON.stringify(tasks));
+          manipulateInterface.displayTasks();
+        }
+      });
+    });
+  }
+}
+export default manipulateInterface;
+
+</script>
+</html>
